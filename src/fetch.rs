@@ -1,4 +1,5 @@
-use cargo_edit::{Dependency, Manifest};
+#![allow(missing_docs)]
+use {Dependency, Manifest};
 use regex::Regex;
 use reqwest;
 use semver;

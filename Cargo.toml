@@ -22,7 +22,12 @@ path = "src/bin/add/main.rs"
 name = "cargo-rm"
 path = "src/bin/rm/main.rs"
 
+[[bin]]
+name = "cargo-upgrade"
+path = "src/bin/upgrade/main.rs"
+
 [dependencies]
+cargo = "0.19.0"
 docopt = "0.8"
 pad = "0.1"
 quick-error = "1.0.0"

@@ -10,19 +10,16 @@ extern crate serde_derive;
 extern crate semver;
 extern crate serde;
 extern crate serde_json;
-#[macro_use]
-extern crate quick_error;
 
 use std::error::Error;
 use std::io::{self, Write};
 use std::process;
 
 extern crate cargo_edit;
-use cargo_edit::Manifest;
+use cargo_edit::{Manifest, fetch};
 
 extern crate regex;
 
-mod fetch;
 mod args;
 use args::Args;
 
