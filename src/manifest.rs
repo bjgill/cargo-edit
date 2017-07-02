@@ -188,8 +188,8 @@ impl Manifest {
         let mut toml = self.data.clone();
 
         let (proj_header, proj_data) = toml.remove("package")
-            .map(|data| ("package", data))
-            .or_else(|| toml.remove("project").map(|data| ("project", data)))
+            .or_else(|| toml.remove("project"))
+            .map(|data| ("project", data))
             .ok_or(ManifestError::MissingManifest)?;
 
         let new_contents = format!(
