@@ -26,17 +26,17 @@ Usage:
 
 Options:
     -h, --help                   Print this message
-    --dependency <dep>           Dependency to update
+    --dependency -d <dep>        Dependency to update
     --manifest-path <path>       Path to the crate's manifest
     -V --version                 Show version
-
-Upgrade to next version @@@
 ";
 
 /// Docopts input args.
 #[derive(Debug, Deserialize)]
 struct Args {
+    /// `--dependency -d <dep>`
     flag_dependency: Vec<String>,
+    /// `--manifest-path <path>`
     flag_manifest_path: Option<String>,
     /// `--version`
     flag_version: bool,
