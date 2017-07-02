@@ -212,8 +212,6 @@ impl Manifest {
         table_path: &[String],
         dep: &Dependency,
     ) -> Result<(), ManifestError> {
-        let (ref name, ref mut new_dependency) = dep.to_toml();
-
         let mut table = descend(&mut self.data, table_path.into_iter().collect())?;
 
         table
@@ -221,7 +219,11 @@ impl Manifest {
             // If there exists an old entry, update it.
             .map(|old_dependency| merge_dependencies(old_dependency, dep))
             // Otherwise insert.
-            .unwrap_or_else(|| { table.insert(name.clone(), new_dependency.clone()); });
+            .unwrap_or_else(|| {
+                let (ref name, ref mut new_dependency) = dep.to_toml();
+
+                table.insert(name.clone(), new_dependency.clone());
+            });
 
         Ok(())
     }
@@ -300,8 +302,9 @@ impl str::FromStr for Manifest {
     /// Read manifest data from string
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let d: toml::value::Value = input.parse()?;
-        let e = d.as_table()
-            .ok_or_else(|| ManifestError::NonExistentTable(String::from("Main")))?;
+        let e = d.as_table().ok_or_else(|| {
+            ManifestError::NonExistentTable(String::from("Main"))
+        })?;
 
         Ok(Manifest { data: e.to_owned() })
     }
