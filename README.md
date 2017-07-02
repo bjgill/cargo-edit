@@ -6,6 +6,7 @@ Currently available subcommands:
 
 - [`cargo add`](#cargo-add)
 - [`cargo rm`](#cargo-rm)
+- [`cargo upgrade`](#cargo-upgrade)
 
 [![Build Status](https://travis-ci.org/killercup/cargo-edit.svg?branch=master)](https://travis-ci.org/killercup/cargo-edit)
 [![Build status](https://ci.appveyor.com/api/projects/status/m23rnkaxhipb23i9/branch/master?svg=true)](https://ci.appveyor.com/project/killercup/cargo-edit/branch/master)
@@ -138,6 +139,36 @@ Options:
     -V --version            Show version.
 
 Remove a dependency from a Cargo.toml manifest file.
+```
+
+### `cargo upgrade`
+
+Upgrade dependencies in your `Cargo.toml` to their latest versions.
+
+#### Examples
+
+```sh
+# Upgrade all dependencies
+$ cargo update
+# Upgrade libc and serde
+$ cargo update -d libc --dependency serde
+```
+
+#### Usage
+
+```plain
+Upgrade dependencies in a manifest file to the latest version.
+
+Usage:
+    cargo upgrade [--dependency <dep>...] [--manifest-path <path>]
+    cargo upgrade (-h | --help)
+    cargo upgrade (-V | --version)
+
+Options:
+    -h, --help                   Print this message
+    --dependency -d <dep>        Dependency to update
+    --manifest-path <path>       Path to the crate's manifest
+    -V --version                 Show version
 ```
 
 ## License
