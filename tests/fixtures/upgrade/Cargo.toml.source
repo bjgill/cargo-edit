@@ -1,0 +1,43 @@
+[package]
+name = "None"
+version = "0.1.0"
+
+[dependencies]
+docopt = "0.8"
+pad = "0.1"
+
+# We cannot yet handle path dependencies
+crates-io = { path = "src/crates-io", version = "0.10" }
+serde_json = "1.0"
+foo = { version = "0.7.0", features = ["serde"] }
+tar = { version = "0.4", default-features = false }
+serde_derive = { version = "1.0", optional = true, path = "../serde_derive" }
+syn = { version = "0.11.10", default-features = false, features = ["parsing"] }
+serde_derive_internals = { version = "=0.15.1", default-features = false, path = "../serde_derive_internals" }
+
+# We cannot yet handle git dependencies
+bar = { git = "https://github.com/foo/bar.git", version = "0.10" }
+
+[dependencies.semver]
+features = ["serde"]
+version = "0.7"
+
+[dev-dependencies]
+assert_cli = "0.2.0"
+
+# We cannot yet handle path dependencies
+cargotest = { path = "tests/cargotest" }
+tempdir = "0.3"
+serde_driver = { version = "1.0", path = "../serde_derive" }
+
+[build-dependencies]
+serde = { version = "1.0", path = "../serde" }
+
+# We cannot yet handle target dependencies
+[target.'cfg(unix)'.dependencies]
+openssl = "0.9"
+
+[features]
+default = []
+test-external-apis = []
+unstable = []

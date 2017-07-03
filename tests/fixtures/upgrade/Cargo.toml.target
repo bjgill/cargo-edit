@@ -1,0 +1,45 @@
+[package]
+name = "None"
+version = "0.1.0"
+
+[dependencies]
+docopt = "docopt--CURRENT_VERSION_TEST"
+pad = "pad--CURRENT_VERSION_TEST"
+
+# We cannot yet handle path dependencies
+crates-io = { path = "src/crates-io", version = "crates-io--CURRENT_VERSION_TEST" }
+serde_json = "serde_json--CURRENT_VERSION_TEST"
+foo = { version = "foo--CURRENT_VERSION_TEST", features = ["serde"] }
+tar = { version = "tar--CURRENT_VERSION_TEST", default-features = false }
+
+# We cannot yet handle path dependencies
+serde_derive = { version = "serde_derive--CURRENT_VERSION_TEST", optional = true, path = "../serde_derive" }
+syn = { version = "syn--CURRENT_VERSION_TEST", default-features = false, features = ["parsing"] }
+serde_derive_internals = { version = "serde_derive_internals--CURRENT_VERSION_TEST", default-features = false, path = "../serde_derive_internals" }
+
+# We cannot yet handle git dependencies
+bar = { git = "https://github.com/foo/bar.git", version = "bar--CURRENT_VERSION_TEST" }
+
+[dependencies.semver]
+features = ["serde"]
+version = "semver--CURRENT_VERSION_TEST"
+
+[dev-dependencies]
+assert_cli = "assert_cli--CURRENT_VERSION_TEST"
+cargotest = { path = "tests/cargotest", version = "cargotest--CURRENT_VERSION_TEST"}
+tempdir = "tempdir--CURRENT_VERSION_TEST"
+
+# We cannot yet handle path dependencies
+serde_driver = { version = "serde_driver--CURRENT_VERSION_TEST", path = "../serde_derive" }
+
+[build-dependencies]
+serde = { version = "serde--CURRENT_VERSION_TEST", path = "../serde" }
+
+# We cannot yet handle target dependencies
+[target.'cfg(unix)'.dependencies]
+openssl = "0.9"
+
+[features]
+default = []
+test-external-apis = []
+unstable = []
