@@ -60,11 +60,19 @@ fn update_manifest(
 
         dependencies
             .iter()
-            .filter(|&(name, _value)| {
+            .filter(|&(name, _old_value)| {
                 // If the user specifies a list of dependencies, we only update those dependencies.
                 only_update.is_empty() || only_update.contains(name)
             })
-            .map(|(name, _value)| {
+            .filter(|&(_name, old_value)| {
+                if let Some(table) = old_value.as_table() {
+                    // Filter out path/git dependencies
+                    !(table.contains_key("git") || table.contains_key("path"))
+                } else {
+                    true
+                }
+            })
+            .map(|(name, _old_value)| {
 
                 let latest_version = fetch::get_latest_dependency(name, false)?;
 

@@ -5,20 +5,14 @@ version = "0.1.0"
 [dependencies]
 docopt = "docopt--CURRENT_VERSION_TEST"
 pad = "pad--CURRENT_VERSION_TEST"
-
-# We cannot yet handle path dependencies
-crates-io = { path = "src/crates-io", version = "crates-io--CURRENT_VERSION_TEST" }
+crates-io = { path = "src/crates-io", version = "0.10" }
 serde_json = "serde_json--CURRENT_VERSION_TEST"
 foo = { version = "foo--CURRENT_VERSION_TEST", features = ["serde"] }
 tar = { version = "tar--CURRENT_VERSION_TEST", default-features = false }
-
-# We cannot yet handle path dependencies
-serde_derive = { version = "serde_derive--CURRENT_VERSION_TEST", optional = true, path = "../serde_derive" }
+serde_derive = { version = "1.0", optional = true, path = "../serde_derive" }
 syn = { version = "syn--CURRENT_VERSION_TEST", default-features = false, features = ["parsing"] }
-serde_derive_internals = { version = "serde_derive_internals--CURRENT_VERSION_TEST", default-features = false, path = "../serde_derive_internals" }
-
-# We cannot yet handle git dependencies
-bar = { git = "https://github.com/foo/bar.git", version = "bar--CURRENT_VERSION_TEST" }
+serde_derive_internals = { version = "=0.15.1", default-features = false, path = "../serde_derive_internals" }
+bar = { git = "https://github.com/foo/bar.git", version = "0.10" }
 
 [dependencies.semver]
 features = ["serde"]
@@ -26,14 +20,12 @@ version = "semver--CURRENT_VERSION_TEST"
 
 [dev-dependencies]
 assert_cli = "assert_cli--CURRENT_VERSION_TEST"
-cargotest = { path = "tests/cargotest", version = "cargotest--CURRENT_VERSION_TEST"}
+cargotest = { path = "tests/cargotest" }
 tempdir = "tempdir--CURRENT_VERSION_TEST"
-
-# We cannot yet handle path dependencies
-serde_driver = { version = "serde_driver--CURRENT_VERSION_TEST", path = "../serde_derive" }
+serde_driver = { version = "1.0", path = "../serde_derive" }
 
 [build-dependencies]
-serde = { version = "serde--CURRENT_VERSION_TEST", path = "../serde" }
+serde = { version = "1.0", path = "../serde" }
 
 # We cannot yet handle target dependencies
 [target.'cfg(unix)'.dependencies]
