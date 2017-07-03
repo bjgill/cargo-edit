@@ -117,25 +117,6 @@ fn merge_dependencies(old_dep: &mut toml::value::Value, new: &Dependency) {
     }
 }
 
-/// Descend into a manifest until the required table is found.
-fn descend<'a>(
-    input: &'a mut BTreeMap<String, toml::Value>,
-    mut path: VecDeque<&String>,
-) -> Result<&'a mut BTreeMap<String, toml::Value>, ManifestError> {
-    if let Some(segment) = path.pop_front() {
-        let value = match *input
-            .entry(segment.to_owned())
-            .or_insert_with(|| toml::Value::Table(BTreeMap::new())) {
-            toml::Value::Table(ref mut t) => t,
-            _ => return Err(ManifestError::NonExistentTable(segment.clone())),
-        };
-
-        descend(value, path)
-    } else {
-        Ok(input)
-    }
-}
-
 impl Manifest {
     /// Look for a `Cargo.toml` file
     ///
@@ -183,6 +164,77 @@ impl Manifest {
         data.parse()
     }
 
+    /// Get the specified table from the manifest.
+    pub fn get_table<'a>(
+        &'a mut self,
+        table_path: &[String],
+    ) -> Result<&'a mut BTreeMap<String, toml::Value>, ManifestError> {
+
+        /// Descend into a manifest until the required table is found.
+        fn descend<'a>(
+            input: &'a mut BTreeMap<String, toml::Value>,
+            mut path: VecDeque<&String>,
+        ) -> Result<&'a mut BTreeMap<String, toml::Value>, ManifestError> {
+            if let Some(segment) = path.pop_front() {
+                let value = match *input
+                    .entry(segment.to_owned())
+                    .or_insert_with(|| toml::Value::Table(BTreeMap::new())) {
+                    toml::Value::Table(ref mut t) => t,
+                    _ => return Err(ManifestError::NonExistentTable(segment.clone())),
+                };
+
+                descend(value, path)
+            } else {
+                Ok(input)
+            }
+        }
+
+        descend(&mut self.data, table_path.into_iter().collect())
+    }
+
+    /// Get all sections in the manifest that exist and might contain dependencies.
+    pub fn get_sections(&self) -> Vec<(Vec<String>, BTreeMap<String, toml::Value>)> {
+        // Dependencies can be in the three standard sections...
+        let mut sections = ["dev-dependencies", "build-dependencies", "dependencies"]
+            .into_iter()
+            .filter_map(|section_candidate| {
+                let section_candidate = section_candidate.to_string();
+
+                match self.data.get(&section_candidate) {
+                    Some(&toml::Value::Table(ref table)) => {
+                        Some((vec![section_candidate], table.clone()))
+                    }
+                    _ => None,
+                }
+
+            })
+            .collect::<Vec<_>>();
+
+        // ... or in `target.<target name>.dependencies`.
+        if let Some(&toml::Value::Table(ref targets)) = self.data.get("target") {
+            sections.extend(
+                targets
+                    .into_iter()
+                    .filter_map(|(name, table)| match table.get("dependencies") {
+                        Some(&toml::Value::Table(ref t)) => Some((name, t)),
+                        _ => None,
+                    })
+                    .map(|(name, table)| {
+                        (
+                            vec![
+                                "target".to_string(),
+                                name.to_owned(),
+                                "dependencies".to_string(),
+                            ],
+                            table.to_owned(),
+                        )
+                    }),
+            );
+        }
+
+        sections
+    }
+
     /// Overwrite a file with TOML data.
     pub fn write_to_file(&self, file: &mut File) -> Result<(), Box<Error>> {
         let mut toml = self.data.clone();
@@ -212,7 +264,7 @@ impl Manifest {
         table_path: &[String],
         dep: &Dependency,
     ) -> Result<(), ManifestError> {
-        let mut table = descend(&mut self.data, table_path.into_iter().collect())?;
+        let mut table = self.get_table(table_path)?;
 
         table
             .get_mut(&dep.name)
@@ -234,7 +286,7 @@ impl Manifest {
         table_path: &[String],
         dep: &Dependency,
     ) -> Result<(), ManifestError> {
-        let mut table = descend(&mut self.data, table_path.into_iter().collect())?;
+        let mut table = self.get_table(table_path)?;
 
         // If (and only if) there is an old entry, merge the new one in.
         table
@@ -302,9 +354,8 @@ impl str::FromStr for Manifest {
     /// Read manifest data from string
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let d: toml::value::Value = input.parse()?;
-        let e = d.as_table().ok_or_else(|| {
-            ManifestError::NonExistentTable(String::from("Main"))
-        })?;
+        let e = d.as_table()
+            .ok_or_else(|| ManifestError::NonExistentTable(String::from("Main")))?;
 
         Ok(Manifest { data: e.to_owned() })
     }

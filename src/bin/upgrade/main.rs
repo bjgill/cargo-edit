@@ -47,18 +47,10 @@ fn update_manifest(
 ) -> Result<(), Box<Error>> {
     let manifest_path = manifest_path.as_ref().map(From::from);
     let mut manifest = Manifest::open(&manifest_path).unwrap();
-    let manifest_input = manifest.clone();
 
     // Look for dependencies in all three sections.
-    for section in &["dev-dependencies", "build-dependencies", "dependencies"] {
-        let dependencies = match manifest_input.data.get(&section.to_string()) {
-            Some(&toml::Value::Table(ref table)) => table,
-            // It's possible for some/all sections to be missing. We need not consider those
-            // further.
-            _ => continue,
-        };
-
-        dependencies
+    for (table_path, table) in manifest.get_sections() {
+        table
             .iter()
             .filter(|&(name, _old_value)| {
                 // If the user specifies a list of dependencies, we only update those dependencies.
@@ -77,10 +69,7 @@ fn update_manifest(
                 let latest_version = fetch::get_latest_dependency(name, false)?;
 
                 // Simply overwrite the old entry.
-                manifest.update_table_entry(
-                    &[section.to_string()],
-                    &latest_version,
-                )?;
+                manifest.update_table_entry(&table_path, &latest_version)?;
 
                 Ok(())
             })

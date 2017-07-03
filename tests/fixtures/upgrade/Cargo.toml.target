@@ -27,9 +27,8 @@ serde_driver = { version = "1.0", path = "../serde_derive" }
 [build-dependencies]
 serde = { version = "1.0", path = "../serde" }
 
-# We cannot yet handle target dependencies
 [target.'cfg(unix)'.dependencies]
-openssl = "0.9"
+openssl = "openssl--CURRENT_VERSION_TEST"
 
 [features]
 default = []

@@ -659,9 +659,9 @@ fn fails_to_update_missing_dependency() {
 
     // Verify that `failure` has not been added
     assert!(no_manifest_failures(&get_toml(&manifest)));
-    get_toml(&manifest)["dependencies"].get("failure").expect(
-        "not added",
-    );
+    get_toml(&manifest)["dependencies"]
+        .get("failure")
+        .expect("not added");
 }
 
 #[test]
@@ -690,7 +690,10 @@ fn update_optional_dependency() {
         val["version"].as_str().expect("not string"),
         "versioned-package--CURRENT_VERSION_TEST"
     );
-    assert_eq!(val["optional"].as_bool().expect("optional not a bool"), true);
+    assert_eq!(
+        val["optional"].as_bool().expect("optional not a bool"),
+        true
+    );
 }
 
 fn overwite_dependency_test(first_command: &[&str], second_command: &[&str], expected: &str) {
