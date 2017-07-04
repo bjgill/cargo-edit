@@ -69,7 +69,7 @@ impl Dependency {
         }
     }
 
-    /// Convert dependency to TOML
+    /// Convert dependency  to TOML
     ///
     /// Returns a tuple with the dependency's name and either the version as a String or the
     /// the path/git repository as a table. (If the dependency is set as `optional`, a tables is
