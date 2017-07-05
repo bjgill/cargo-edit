@@ -18,7 +18,7 @@ extern crate cargo_edit;
 use cargo_edit::{Manifest, get_latest_dependency};
 
 static USAGE: &'static str = r"
-Upgrade dependencies in a manifest file to the latest version.
+Upgrade all dependencies in a manifest file to the latest version.
 
 Usage:
     cargo upgrade [--dependency <dep>...] [--manifest-path <path>]
@@ -26,12 +26,14 @@ Usage:
     cargo upgrade (-V | --version)
 
 Options:
-    -h, --help                   Print this message
-    --dependency -d <dep>        Dependency to update
-    --manifest-path <path>       Path to the crate's manifest
-    -V --version                 Show version
+    -d --dependency <dep>       Specific dependency to upgrade. If this option is used, only the
+                                specified dependencies will be upgraded.
+    --manifest-path <path>      Path to the manifest to upgrade.
+    -h --help                   Show this help page.
+    -V --version                Show version.
 
-Only dependencies from crates.io are supported. Git/path dependencies will be ignored.
+Dev, build, and all target dependencies will also be upgraded. Only dependencies from crates.io are
+supported. Git/path dependencies will be ignored.
 ";
 
 /// Docopts input args.
