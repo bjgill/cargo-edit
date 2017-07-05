@@ -63,7 +63,7 @@ fn update_manifest(
     let manifest_path = manifest_path.as_ref().map(From::from);
     let mut manifest = Manifest::open(&manifest_path).unwrap();
 
-    // Look for dependencies in all three sections.
+    // Look for dependencies in all sections.
     for (table_path, table) in manifest.get_sections() {
         table
             .iter()
@@ -76,7 +76,6 @@ fn update_manifest(
 
                 let latest_version = get_latest_dependency(name, false)?;
 
-                // Simply overwrite the old entry.
                 manifest.update_table_entry(&table_path, &latest_version)?;
 
                 Ok(())

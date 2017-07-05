@@ -30,6 +30,16 @@ serde = { version = "1.0", path = "../serde" }
 [target.'cfg(unix)'.dependencies]
 openssl = "openssl--CURRENT_VERSION_TEST"
 
+[target."x86_64/windows.json".dependencies]
+winhttp = "winhttp--CURRENT_VERSION_TEST"
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+native = { path = "native/x86_64" }
+
+[target.'cfg(unix)'.dev-dependencies]
+mio = { version = "0.0.1", path = "../serde_derive" }
+geo = { version = "geo--CURRENT_VERSION_TEST", default-features = false, features = ["green"] }
+
 [features]
 default = []
 test-external-apis = []

@@ -210,26 +210,28 @@ impl Manifest {
             })
             .collect::<Vec<_>>();
 
-        // ... or in `target.<target name>.dependencies`.
+        // ... or in `target.<target name>.(dev-)dependencies`.
         if let Some(&toml::Value::Table(ref targets)) = self.data.get("target") {
-            sections.extend(
-                targets
-                    .into_iter()
-                    .filter_map(|(name, table)| match table.get("dependencies") {
-                        Some(&toml::Value::Table(ref t)) => Some((name, t)),
-                        _ => None,
-                    })
-                    .map(|(name, table)| {
-                        (
-                            vec![
-                                "target".to_string(),
-                                name.to_owned(),
-                                "dependencies".to_string(),
-                            ],
-                            table.to_owned(),
-                        )
-                    }),
-            );
+            for target_section in &["dev-dependencies", "dependencies"] {
+                sections.extend(
+                    targets
+                        .into_iter()
+                        .filter_map(|(name, table)| match table.get(target_section) {
+                            Some(&toml::Value::Table(ref t)) => Some((name, t)),
+                            _ => None,
+                        })
+                        .map(|(name, table)| {
+                            (
+                                vec![
+                                    "target".to_string(),
+                                    name.to_owned(),
+                                    target_section.to_string(),
+                                ],
+                                table.to_owned(),
+                            )
+                        }),
+                );
+            }
         }
 
         sections
