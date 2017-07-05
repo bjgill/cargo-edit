@@ -40,6 +40,9 @@ native = { path = "native/x86_64" }
 mio = { version = "0.0.1", path = "../serde_derive" }
 geo = { version = "0.2.1", default-features = false, features = ["green"] }
 
+[target.foo.build-dependencies]
+winsftp = "0.4.0"
+
 [features]
 default = []
 test-external-apis = []

@@ -194,44 +194,40 @@ impl Manifest {
 
     /// Get all sections in the manifest that exist and might contain dependencies.
     pub fn get_sections(&self) -> Vec<(Vec<String>, BTreeMap<String, toml::Value>)> {
-        // Dependencies can be in the three standard sections...
-        let mut sections = ["dev-dependencies", "build-dependencies", "dependencies"]
-            .into_iter()
-            .filter_map(|section_candidate| {
-                let section_candidate = section_candidate.to_string();
+        let mut sections = Vec::new();
 
-                match self.data.get(&section_candidate) {
-                    Some(&toml::Value::Table(ref table)) => {
-                        Some((vec![section_candidate], table.clone()))
-                    }
-                    _ => None,
-                }
+        for dependency_type in &["dev-dependencies", "build-dependencies", "dependencies"] {
+            // Dependencies can be in the three standard sections...
+            self.data
+                .get(&dependency_type.to_string())
+                .and_then(toml::Value::as_table)
+                .map(|table| {
+                    sections.push((vec![dependency_type.to_string()], table.clone()))
+                });
 
-            })
-            .collect::<Vec<_>>();
-
-        // ... or in `target.<target name>.(dev-)dependencies`.
-        if let Some(&toml::Value::Table(ref targets)) = self.data.get("target") {
-            for target_section in &["dev-dependencies", "dependencies"] {
-                sections.extend(
-                    targets
-                        .into_iter()
-                        .filter_map(|(name, table)| match table.get(target_section) {
-                            Some(&toml::Value::Table(ref t)) => Some((name, t)),
-                            _ => None,
-                        })
-                        .map(|(name, table)| {
+            // ... and in `target.<target>.(build-/dev-)dependencies`.
+            let target_sections = self.data
+                .get("target")
+                .and_then(toml::Value::as_table)
+                .into_iter()
+                .flat_map(|target_tables| target_tables.into_iter())
+                .filter_map(|(target_name, target_table)| {
+                    target_table
+                        .get(dependency_type)
+                        .and_then(toml::Value::as_table)
+                        .map(|dependency_table| {
                             (
                                 vec![
                                     "target".to_string(),
-                                    name.to_owned(),
-                                    target_section.to_string(),
+                                    target_name.to_string(),
+                                    dependency_type.to_string(),
                                 ],
-                                table.to_owned(),
+                                dependency_table.to_owned(),
                             )
-                        }),
-                );
-            }
+                        })
+                });
+
+            sections.extend(target_sections);
         }
 
         sections
