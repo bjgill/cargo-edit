@@ -147,9 +147,9 @@ Upgrade dependencies in your `Cargo.toml` to their latest versions.
 
 ```sh
 # Upgrade all dependencies
-$ cargo update
+$ cargo upgrade
 # Upgrade libc and serde
-$ cargo update -d libc --dependency serde
+$ cargo upgrade -d libc --dependency serde
 ```
 
 #### Usage
