@@ -34,8 +34,6 @@ pub struct Args {
     pub flag_version: bool,
     /// `---upgrade`
     pub flag_upgrade: Option<String>,
-    /// `--update-only`
-    pub flag_update_only: bool,
     /// '--fetch-prereleases'
     pub flag_allow_prerelease: bool,
 }
@@ -147,7 +145,6 @@ impl Default for Args {
             flag_manifest_path: None,
             flag_version: false,
             flag_upgrade: None,
-            flag_update_only: false,
             flag_allow_prerelease: false,
         }
     }

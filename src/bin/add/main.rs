@@ -51,8 +51,6 @@ Options:
     --upgrade=<method>      Choose method of semantic version upgrade. Must be one of
                             "none" (exact version), "patch" (`~` modifier), "minor"
                             (`^` modifier, default), or "all" (`>=`).
-    --update-only           If the dependency already exists, it will have its version updated,
-                            preserving all other fields. The dependency will not be added if absent.
     --manifest-path=<path>  Path to the manifest to add a dependency to.
     --allow-prerelease      Include prerelease versions when fetching from crates.io (e.g.
                             '0.6.0-alpha'). Defaults to false.
@@ -75,11 +73,7 @@ fn handle_add(args: &Args) -> Result<(), Box<Error>> {
     let deps = &args.parse_dependencies()?;
 
     deps.iter()
-        .map(|dep| if args.flag_update_only {
-            manifest.update_table_entry(&args.get_section(), dep)
-        } else {
-            manifest.insert_into_table(&args.get_section(), dep)
-        })
+        .map(|dep| manifest.insert_into_table(&args.get_section(), dep))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|err| {
             println!("Could not edit `Cargo.toml`.\n\nERROR: {}", err);
