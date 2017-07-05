@@ -8,6 +8,7 @@ fn invalid_manifest() {
                   "foo",
                   "--manifest-path=tests/fixtures/manifest-invalid/Cargo.toml.sample"] =>
                 Error 1,
-"Command failed due to unhandled error: failed to parse datetime for key `invalid-section.key`")
+                "Command failed due to unhandled error: \
+                failed to parse datetime for key `invalid-section.key`")
         .unwrap();
 }
