@@ -1,6 +1,8 @@
 //! `cargo add`
 
-#![warn(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts, trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces, unused_qualifications)]
+#![warn(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
+        trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
+        unused_qualifications)]
 
 extern crate reqwest;
 extern crate docopt;
@@ -16,7 +18,7 @@ use std::io::{self, Write};
 use std::process;
 
 extern crate cargo_edit;
-use cargo_edit::{Manifest, fetch};
+use cargo_edit::Manifest;
 
 extern crate regex;
 

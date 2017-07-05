@@ -1,6 +1,6 @@
 # cargo edit
 
-This tool extends [Cargo](http://doc.crates.io/) to allow you to add and remove dependencies by modifying your `Cargo.toml` file from the command line
+This tool extends [Cargo](http://doc.crates.io/) to allow you to add, remove, and upgrade dependencies by modifying your `Cargo.toml` file from the command line.
 
 Currently available subcommands:
 
@@ -169,6 +169,8 @@ Options:
     --dependency -d <dep>        Dependency to update
     --manifest-path <path>       Path to the crate's manifest
     -V --version                 Show version
+
+Only dependencies from crates.io are supported. Git/path dependencies will be ignored.
 ```
 
 ## License

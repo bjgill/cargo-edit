@@ -666,8 +666,8 @@ fn fails_to_update_missing_dependency() {
 
 #[test]
 fn update_optional_dependency() {
-    // Set up a Cargo.toml with an optional dependency `test_optional_dependency` verifies that this
-    // is correct.
+    // Set up a Cargo.toml with an optional dependency. `test_optional_dependency` verifies that
+    // this is correct.
     let (_tmpdir, manifest) = clone_out_test("tests/fixtures/add/Cargo.toml.sample");
     execute_command(
         &[

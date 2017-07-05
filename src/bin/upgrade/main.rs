@@ -1,6 +1,8 @@
 //! `cargo upgrade`
 
-#![warn(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts, trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces, unused_qualifications)]
+#![warn(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
+        trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
+        unused_qualifications)]
 
 extern crate docopt;
 extern crate pad;
@@ -13,7 +15,7 @@ use std::io::{self, Write};
 use std::process;
 
 extern crate cargo_edit;
-use cargo_edit::{Manifest, fetch};
+use cargo_edit::{Manifest, get_latest_dependency};
 
 static USAGE: &'static str = r"
 Upgrade dependencies in a manifest file to the latest version.
@@ -28,6 +30,8 @@ Options:
     --dependency -d <dep>        Dependency to update
     --manifest-path <path>       Path to the crate's manifest
     -V --version                 Show version
+
+Only dependencies from crates.io are supported. Git/path dependencies will be ignored.
 ";
 
 /// Docopts input args.
@@ -39,6 +43,15 @@ struct Args {
     flag_manifest_path: Option<String>,
     /// `--version`
     flag_version: bool,
+}
+
+fn is_version_dependency(dep: &toml::Value) -> bool {
+    dep.as_table()
+        .map(|table| {
+            // Not a version dependency if the `git` or `path` keys are present.
+            !(table.contains_key("git") || table.contains_key("path"))
+        })
+        .unwrap_or(true)
 }
 
 fn update_manifest(
@@ -53,20 +66,13 @@ fn update_manifest(
         table
             .iter()
             .filter(|&(name, _old_value)| {
-                // If the user specifies a list of dependencies, we only update those dependencies.
+                // If the user specifies a list of dependencies, only update those dependencies.
                 only_update.is_empty() || only_update.contains(name)
             })
-            .filter(|&(_name, old_value)| {
-                if let Some(table) = old_value.as_table() {
-                    // Filter out path/git dependencies
-                    !(table.contains_key("git") || table.contains_key("path"))
-                } else {
-                    true
-                }
-            })
+            .filter(|&(_name, old_value)| is_version_dependency(old_value))
             .map(|(name, _old_value)| {
 
-                let latest_version = fetch::get_latest_dependency(name, false)?;
+                let latest_version = get_latest_dependency(name, false)?;
 
                 // Simply overwrite the old entry.
                 manifest.update_table_entry(&table_path, &latest_version)?;
