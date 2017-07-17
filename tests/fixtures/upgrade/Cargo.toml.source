@@ -2,6 +2,8 @@
 name = "None"
 version = "0.1.0"
 
+[lib]
+
 [dependencies]
 bar = { git = "https://github.com/foo/bar.git", version = "0.10" }
 crates-io = { path = "src/crates-io", version = "0.10" }
