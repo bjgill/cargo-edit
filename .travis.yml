@@ -25,7 +25,10 @@ script:
   travis-cargo --only stable doc
 addons:
   apt:
+    sources:
+    - kalakris-cmake
     packages:
+    - cmake
     - libcurl4-openssl-dev
     - libelf-dev
     - libdw-dev
