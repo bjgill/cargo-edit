@@ -4,6 +4,7 @@
         trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
         unused_qualifications)]
 
+extern crate cargo;
 extern crate docopt;
 extern crate pad;
 #[macro_use]
@@ -13,6 +14,11 @@ extern crate toml;
 use std::error::Error;
 use std::io::{self, Write};
 use std::process;
+
+use cargo::Config;
+use cargo::core::{Dependency, Package};
+use cargo::core::shell::{ColorConfig, Verbosity};
+use cargo::util::important_paths::find_root_manifest_for_wd;
 
 extern crate cargo_edit;
 use cargo_edit::{Manifest, get_latest_dependency};
@@ -47,41 +53,40 @@ struct Args {
     flag_version: bool,
 }
 
-fn is_version_dependency(dep: &toml::Value) -> bool {
-    dep.as_table()
-        .map(|table| {
-            // Not a version dependency if the `git` or `path` keys are present.
-            !(table.contains_key("git") || table.contains_key("path"))
-        })
-        .unwrap_or(true)
-}
-
 fn update_manifest(
     manifest_path: &Option<String>,
     only_update: &[String],
+    all_dependencies: &[Dependency],
 ) -> Result<(), Box<Error>> {
     let manifest_path = manifest_path.as_ref().map(From::from);
     let mut manifest = Manifest::open(&manifest_path).unwrap();
 
-    // Look for dependencies in all sections.
-    for (table_path, table) in manifest.get_sections() {
-        table
-            .iter()
-            .filter(|&(name, _old_value)| {
-                // If the user specifies a list of dependencies, only update those dependencies.
-                only_update.is_empty() || only_update.contains(name)
-            })
-            .filter(|&(_name, old_value)| is_version_dependency(old_value))
-            .map(|(name, _old_value)| {
+    all_dependencies
+        .into_iter()
+        .filter(|dependency| {
+            // If the user specifies a list of dependencies, only update those dependencies.
+            only_update.is_empty() || only_update.contains(&dependency.name().to_string())
+        })
+        .filter(|dependency| dependency.source_id().is_registry())
+        .map(|dependency| {
+            let name = dependency.name();
 
-                let latest_version = get_latest_dependency(name, false)?;
+            let latest_version = get_latest_dependency(name, false)?;
 
-                manifest.update_table_entry(&table_path, &latest_version)?;
+            let new = latest_version
+                .version()
+                .ok_or("Failed to get latest version")?;
 
-                Ok(())
-            })
-            .collect::<Result<Vec<_>, Box<Error>>>()?;
-    }
+            let new_dependency = dependency
+                .clone_inner()
+                .set_version_req(new.parse()?)
+                .into_dependency();
+
+            manifest.update_dependency(&new_dependency)?;
+
+            Ok(())
+        })
+        .collect::<Result<Vec<_>, Box<Error>>>()?;
 
     let mut file = Manifest::find_file(&manifest_path)?;
     manifest.write_to_file(&mut file)
@@ -97,7 +102,26 @@ fn main() {
         process::exit(0);
     }
 
-    if let Err(err) = update_manifest(&args.flag_manifest_path, &args.flag_dependency) {
+    let cargo_config = match Config::default() {
+        Ok(cfg) => cfg,
+        Err(e) => {
+            let mut shell = cargo::shell(Verbosity::Verbose, ColorConfig::Auto);
+            cargo::exit_with_error(e.into(), &mut shell)
+        }
+    };
+
+    let root = find_root_manifest_for_wd(args.flag_manifest_path.clone(), cargo_config.cwd())
+        .unwrap();
+
+    let pkg = Package::for_path(&root, &cargo_config).unwrap();
+
+    let dependencies = pkg.manifest().dependencies();
+
+    if let Err(err) = update_manifest(
+        &args.flag_manifest_path,
+        &args.flag_dependency,
+        dependencies,
+    ) {
         writeln!(
             io::stderr(),
             "Command failed due to unhandled error: {}\n",

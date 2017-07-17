@@ -5,6 +5,7 @@
         trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
         unused_qualifications)]
 
+extern crate cargo;
 #[macro_use]
 extern crate quick_error;
 extern crate regex;

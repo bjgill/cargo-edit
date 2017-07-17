@@ -29,7 +29,7 @@ fn adds_dependency() {
     // dependency present afterwards
     let toml = get_toml(&manifest);
     let val = &toml["dependencies"]["my-package"];
-    assert_eq!(val.as_str().unwrap(), "my-package--CURRENT_VERSION_TEST");
+    assert_eq!(val.as_str().unwrap(), "42-my-package-CURRENT-VERSION-TEST");
 }
 
 fn upgrade_test_helper(upgrade_method: &str, expected_prefix: &str) {
@@ -47,7 +47,7 @@ fn upgrade_test_helper(upgrade_method: &str, expected_prefix: &str) {
     let toml = get_toml(&manifest);
     let val = &toml["dependencies"]["my-package"];
 
-    let expected_result = format!("{0}my-package--CURRENT_VERSION_TEST", expected_prefix);
+    let expected_result = format!("{0}42-my-package-CURRENT-VERSION-TEST", expected_prefix);
     assert_eq!(val.as_str().unwrap(), expected_result);
 }
 
@@ -86,9 +86,9 @@ fn adds_multiple_dependencies() {
     // dependencies present afterwards
     let toml = get_toml(&manifest);
     let val = &toml["dependencies"]["my-package1"];
-    assert_eq!(val.as_str().unwrap(), "my-package1--CURRENT_VERSION_TEST");
+    assert_eq!(val.as_str().unwrap(), "42-my-package1-CURRENT-VERSION-TEST");
     let val = &toml["dependencies"]["my-package2"];
-    assert_eq!(val.as_str().unwrap(), "my-package2--CURRENT_VERSION_TEST");
+    assert_eq!(val.as_str().unwrap(), "42-my-package2-CURRENT-VERSION-TEST");
 }
 
 #[test]
@@ -108,12 +108,12 @@ fn adds_dev_build_dependency() {
     let val = &toml["dev-dependencies"]["my-dev-package"];
     assert_eq!(
         val.as_str().unwrap(),
-        "my-dev-package--CURRENT_VERSION_TEST"
+        "42-my-dev-package-CURRENT-VERSION-TEST"
     );
     let val = &toml["build-dependencies"]["my-build-package"];
     assert_eq!(
         val.as_str().unwrap(),
-        "my-build-package--CURRENT_VERSION_TEST"
+        "42-my-build-package-CURRENT-VERSION-TEST"
     );
 
     // cannot run with both --dev and --build at the same time
@@ -152,22 +152,22 @@ fn adds_multiple_dev_build_dependencies() {
     let val = &toml["dev-dependencies"]["my-dev-package1"];
     assert_eq!(
         val.as_str().unwrap(),
-        "my-dev-package1--CURRENT_VERSION_TEST"
+        "42-my-dev-package1-CURRENT-VERSION-TEST"
     );
     let val = &toml["dev-dependencies"]["my-dev-package2"];
     assert_eq!(
         val.as_str().unwrap(),
-        "my-dev-package2--CURRENT_VERSION_TEST"
+        "42-my-dev-package2-CURRENT-VERSION-TEST"
     );
     let val = &toml["build-dependencies"]["my-build-package1"];
     assert_eq!(
         val.as_str().unwrap(),
-        "my-build-package1--CURRENT_VERSION_TEST"
+        "42-my-build-package1-CURRENT-VERSION-TEST"
     );
     let val = &toml["build-dependencies"]["my-build-package2"];
     assert_eq!(
         val.as_str().unwrap(),
-        "my-build-package2--CURRENT_VERSION_TEST"
+        "42-my-build-package2-CURRENT-VERSION-TEST"
     );
 }
 
@@ -254,7 +254,7 @@ fn adds_multiple_dependencies_with_some_versions() {
     let val = &toml["dependencies"]["my-package1"];
     assert_eq!(
         val.as_str().expect("not string"),
-        "my-package1--CURRENT_VERSION_TEST"
+        "42-my-package1-CURRENT-VERSION-TEST"
     );
     let val = &toml["dependencies"]["my-package2"];
     assert_eq!(val.as_str().expect("not string"), "0.2.3");
@@ -491,7 +491,7 @@ fn adds_dependency_with_target_triple() {
     let toml = get_toml(&manifest);
 
     let val = &toml["target"]["i686-unknown-linux-gnu"]["dependencies"]["my-package1"];
-    assert_eq!(val.as_str().unwrap(), "my-package1--CURRENT_VERSION_TEST");
+    assert_eq!(val.as_str().unwrap(), "42-my-package1-CURRENT-VERSION-TEST");
 }
 
 #[test]
@@ -508,7 +508,7 @@ fn adds_dependency_with_target_cfg() {
     let toml = get_toml(&manifest);
     let val = &toml["target"]["cfg(unix)"]["dependencies"]["my-package1"];
 
-    assert_eq!(val.as_str().unwrap(), "my-package1--CURRENT_VERSION_TEST");
+    assert_eq!(val.as_str().unwrap(), "42-my-package1-CURRENT-VERSION-TEST");
 }
 
 #[test]
@@ -527,7 +527,7 @@ fn adds_dependency_with_custom_target() {
     if let toml::Value::Table(ref table) = *target {
         let win_target = &table["x86_64/windows.json"];
         let val = &win_target["dependencies"]["my-package1"];
-        assert_eq!(val.as_str().unwrap(), "my-package1--CURRENT_VERSION_TEST");
+        assert_eq!(val.as_str().unwrap(), "42-my-package1-CURRENT-VERSION-TEST");
     } else {
         panic!("target is not a table");
     }
@@ -644,6 +644,8 @@ fn overwite_dependency_test(first_command: &[&str], second_command: &[&str], exp
         [package]
         name = "cargo-list-test-fixture"
         version = "0.0.0"
+
+        [lib]
     "#.to_string() + expected;
     let expected_dep: toml::Value = toml::from_str(&expected).unwrap();
     assert_eq!(expected_dep, toml);
@@ -656,7 +658,7 @@ fn overwrite_version_with_version() {
         &["add", "versioned-package"],
         r#"
             [dependencies.versioned-package]
-            version = "versioned-package--CURRENT_VERSION_TEST"
+            version = "42-versioned-package-CURRENT-VERSION-TEST"
             optional = true
         "#,
     )
@@ -714,7 +716,7 @@ fn overwrite_path_with_version() {
         &["add", "versioned-package"],
         r#"
             [dependencies]
-            versioned-package = "versioned-package--CURRENT_VERSION_TEST"
+            versioned-package = "42-versioned-package-CURRENT-VERSION-TEST"
         "#,
     )
 }

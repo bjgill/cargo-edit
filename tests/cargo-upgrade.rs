@@ -36,7 +36,7 @@ fn upgrade_all() {
     let val = &toml["dependencies"]["versioned-package"];
     assert_eq!(
         val.as_str().expect("not string"),
-        "versioned-package--CURRENT_VERSION_TEST"
+        "42-versioned-package-CURRENT-VERSION-TEST"
     );
 }
 
@@ -59,7 +59,7 @@ fn upgrade_specified_only() {
         get_toml(&manifest)["dependencies"]["versioned-package"]
             .as_str()
             .expect("not string"),
-        "versioned-package--CURRENT_VERSION_TEST"
+        "42-versioned-package-CURRENT-VERSION-TEST"
     );
     assert_eq!(
         get_toml(&manifest)["dependencies"]["versioned-package-2"]
@@ -105,7 +105,7 @@ fn upgrade_optional_dependency() {
     let val = &toml["dependencies"]["versioned-package"];
     assert_eq!(
         val["version"].as_str().expect("not string"),
-        "versioned-package--CURRENT_VERSION_TEST"
+        "42-versioned-package-CURRENT-VERSION-TEST"
     );
     assert_eq!(
         val["optional"].as_bool().expect("optional not a bool"),

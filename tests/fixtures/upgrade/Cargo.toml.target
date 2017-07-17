@@ -7,43 +7,43 @@ version = "0.1.0"
 [dependencies]
 bar = { git = "https://github.com/foo/bar.git", version = "0.10" }
 crates-io = { path = "src/crates-io", version = "0.10" }
-docopt = "docopt--CURRENT_VERSION_TEST"
-foo = { version = "foo--CURRENT_VERSION_TEST", features = ["serde"] }
-pad = "pad--CURRENT_VERSION_TEST"
+docopt = "42-docopt-CURRENT-VERSION-TEST"
+foo = { version = "42-foo-CURRENT-VERSION-TEST", features = ["serde"] }
+pad = "42-pad-CURRENT-VERSION-TEST"
 serde_derive = { version = "1.0", optional = true, path = "../serde_derive" }
 serde_derive_internals = { version = "=0.15.1", default-features = false, path = "../serde_derive_internals" }
-serde_json = "serde_json--CURRENT_VERSION_TEST"
-syn = { version = "syn--CURRENT_VERSION_TEST", default-features = false, features = ["parsing"] }
-tar = { version = "tar--CURRENT_VERSION_TEST", default-features = false }
+serde_json = "42-serde-json-CURRENT-VERSION-TEST"
+syn = { version = "42-syn-CURRENT-VERSION-TEST", default-features = false, features = ["parsing"] }
+tar = { version = "42-tar-CURRENT-VERSION-TEST", default-features = false }
 
 [dependencies.semver]
 features = ["serde"]
-version = "semver--CURRENT_VERSION_TEST"
+version = "42-semver-CURRENT-VERSION-TEST"
 
 [dev-dependencies]
-assert_cli = "assert_cli--CURRENT_VERSION_TEST"
+assert_cli = "42-assert-cli-CURRENT-VERSION-TEST"
 cargotest = { path = "tests/cargotest" }
 serde_driver = { version = "1.0", path = "../serde_derive" }
-tempdir = "tempdir--CURRENT_VERSION_TEST"
+tempdir = "42-tempdir-CURRENT-VERSION-TEST"
 
 [build-dependencies]
 serde = { version = "1.0", path = "../serde" }
 
 [target.'cfg(unix)'.dependencies]
-openssl = "openssl--CURRENT_VERSION_TEST"
+openssl = "42-openssl-CURRENT-VERSION-TEST"
 
 [target."x86_64/windows.json".dependencies]
-winhttp = "winhttp--CURRENT_VERSION_TEST"
+winhttp = "42-winhttp-CURRENT-VERSION-TEST"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 native = { path = "native/x86_64" }
 
 [target.'cfg(unix)'.dev-dependencies]
 mio = { version = "0.0.1", path = "../serde_derive" }
-geo = { version = "geo--CURRENT_VERSION_TEST", default-features = false, features = ["green"] }
+geo = { version = "42-geo-CURRENT-VERSION-TEST", default-features = false, features = ["green"] }
 
 [target.foo.build-dependencies]
-winsftp = "winsftp--CURRENT_VERSION_TEST"
+winsftp = "42-winsftp-CURRENT-VERSION-TEST"
 
 [features]
 default = []

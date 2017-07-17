@@ -1,3 +1,5 @@
+use cargo;
+use cargo::core::dependency::Kind;
 use dependency::Dependency;
 use std::{env, str};
 use std::collections::{BTreeMap, VecDeque};
@@ -117,6 +119,26 @@ fn merge_dependencies(old_dep: &mut toml::value::Value, new: &Dependency) {
     }
 }
 
+/// Get the path to the table in the `Manifest` containing this `Dependency`
+fn get_table_path(new_dependency: &cargo::core::Dependency) -> Vec<String> {
+    let mut table_path = vec![];
+
+    if let Some(platform) = new_dependency.platform() {
+        table_path.push("target".to_string());
+        table_path.push(platform.to_string())
+    }
+
+    table_path.push(
+        match new_dependency.kind() {
+            Kind::Normal => "dependencies",
+            Kind::Development => "dev-dependencies",
+            Kind::Build => "build-dependencies",
+        }.to_string(),
+    );
+
+    table_path
+}
+
 impl Manifest {
     /// Look for a `Cargo.toml` file
     ///
@@ -192,47 +214,6 @@ impl Manifest {
         descend(&mut self.data, table_path.into_iter().collect())
     }
 
-    /// Get all sections in the manifest that exist and might contain dependencies.
-    pub fn get_sections(&self) -> Vec<(Vec<String>, BTreeMap<String, toml::Value>)> {
-        let mut sections = Vec::new();
-
-        for dependency_type in &["dev-dependencies", "build-dependencies", "dependencies"] {
-            // Dependencies can be in the three standard sections...
-            self.data
-                .get(&dependency_type.to_string())
-                .and_then(toml::Value::as_table)
-                .map(|table| {
-                    sections.push((vec![dependency_type.to_string()], table.clone()))
-                });
-
-            // ... and in `target.<target>.(build-/dev-)dependencies`.
-            let target_sections = self.data
-                .get("target")
-                .and_then(toml::Value::as_table)
-                .into_iter()
-                .flat_map(|target_tables| target_tables.into_iter())
-                .filter_map(|(target_name, target_table)| {
-                    target_table
-                        .get(dependency_type)
-                        .and_then(toml::Value::as_table)
-                        .map(|dependency_table| {
-                            (
-                                vec![
-                                    "target".to_string(),
-                                    target_name.to_string(),
-                                    dependency_type.to_string(),
-                                ],
-                                dependency_table.to_owned(),
-                            )
-                        })
-                });
-
-            sections.extend(target_sections);
-        }
-
-        sections
-    }
-
     /// Overwrite a file with TOML data.
     pub fn write_to_file(&self, file: &mut File) -> Result<(), Box<Error>> {
         let mut toml = self.data.clone();
@@ -278,18 +259,38 @@ impl Manifest {
         Ok(())
     }
 
-    /// Update an entry in Cargo.toml.
-    pub fn update_table_entry(
+    /// Update the version of a `Manifest`'s `Dependency`.
+    pub fn update_dependency(
         &mut self,
-        table_path: &[String],
-        dep: &Dependency,
+        new_dependency: &cargo::core::Dependency,
     ) -> Result<(), ManifestError> {
-        let mut table = self.get_table(table_path)?;
+        let mut table = self.get_table(&get_table_path(new_dependency))?;
 
         // If (and only if) there is an old entry, merge the new one in.
-        table
-            .get_mut(&dep.name)
-            .map(|old_dependency| merge_dependencies(old_dependency, dep));
+        table.get_mut(new_dependency.name()).map(|old_dependency| {
+            let new_version = new_dependency.version_req().to_string();
+
+            // Caret is implicit, so we strip it.
+            let new_version = toml::Value::String(new_version.trim_left_matches('^').to_string());
+
+            if old_dependency.is_str() ||
+                old_dependency
+                    .as_table()
+                    .map(|o| o.len() == 1)
+                    .unwrap_or(false)
+            {
+                // The old dependency is just a version. We are safe to overwrite.
+                ::std::mem::replace(old_dependency, new_version);
+            } else if let Some(old) = old_dependency.as_table_mut() {
+                ::std::mem::replace(
+                    old.get_mut("version")
+                        .expect("Unable to update dependency without `version` field"),
+                    new_version,
+                );
+            } else {
+                unreachable!("Invalid old dependency type");
+            }
+        });
 
         Ok(())
     }
@@ -377,37 +378,6 @@ mod tests {
                 .is_ok()
         );
         assert_eq!(manifest, clone);
-    }
-
-    #[test]
-    fn update_dependency() {
-        let mut manifest = Manifest { data: toml::value::Table::new() };
-        let dep = Dependency::new("cargo-edit").set_version("0.1.0");
-        manifest
-            .insert_into_table(&["dependencies".to_owned()], &dep)
-            .unwrap();
-
-        let new_dep = Dependency::new("cargo-edit").set_version("0.2.0");
-        manifest
-            .update_table_entry(&["dependencies".to_owned()], &new_dep)
-            .unwrap();
-    }
-
-    #[test]
-    fn update_wrong_dependency() {
-        let mut manifest = Manifest { data: toml::value::Table::new() };
-        let dep = Dependency::new("cargo-edit").set_version("0.1.0");
-        manifest
-            .insert_into_table(&["dependencies".to_owned()], &dep)
-            .unwrap();
-        let original = manifest.clone();
-
-        let new_dep = Dependency::new("wrong-dep").set_version("0.2.0");
-        manifest
-            .update_table_entry(&["dependencies".to_owned()], &new_dep)
-            .unwrap();
-
-        assert_eq!(manifest, original);
     }
 
     #[test]
