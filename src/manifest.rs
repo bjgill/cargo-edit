@@ -280,7 +280,9 @@ impl Manifest {
         let (proj_header, proj_data) = toml.remove("package")
             .map(|data| ("package", data))
             .or_else(|| toml.remove("project").map(|data| ("project", data)))
-            .ok_or_else(|| ErrorKind::MissingManifest)?;
+            .ok_or_else(|| if toml.contains_key("workspace") {
+                ErrorKind::VirtualManifest
+            } else {ErrorKind::InvalidManifest})?;
 
         let new_contents = format!(
             "[{}]\n{}\n{}",

@@ -49,7 +49,7 @@ repository = "killercup/cargo-edit"
 
 [dependencies]
 docopt = "0.8"
-error-chain = "0.10.0"
+error-chain = "0.11.0"
 pad = "0.1"
 regex = "0.2"
 reqwest = "0.7.1"

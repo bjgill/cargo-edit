@@ -23,6 +23,14 @@ error_chain!{
         MissingManifest {
             description("Unable to find Cargo.toml")
         }
+        /// Cargo.toml is invalid (missing `[package]`)
+        InvalidManifest {
+            description("Invalid Cargo.toml")
+        }
+        /// Trying to edit a virtual manifest
+        VirtualManifest {
+            description("Unable to modify virtual manifest")
+        }
         /// The TOML table could not be found.
         NonExistentTable(table: String) {
             description("non existent table")
