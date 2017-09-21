@@ -290,7 +290,7 @@ impl Manifest {
                 .get(&dependency_type.to_string())
                 .and_then(toml::Value::as_table)
                 .map(|table| {
-                    sections.push((dependency_type.clone(), Target::Default, table.clone()))
+                    sections.push((dependency_type, Target::Default, table.clone()))
                 });
 
             // ... and in `target.<target>.(build-/dev-)dependencies`.
@@ -305,7 +305,7 @@ impl Manifest {
                         .and_then(toml::Value::as_table)
                         .map(|dependency_table| {
                             (
-                                dependency_type.clone(),
+                                dependency_type,
                                 Target::Specified(target_name.to_string()),
                                 dependency_table.to_owned(),
                             )
@@ -402,25 +402,28 @@ impl Manifest {
     ///     let mut manifest = Manifest { data: toml::value::Table::new() };
     ///     let dep = Dependency::new("cargo-edit").set_version("0.1.0");
     ///     let _ = manifest.insert_into_table(&DependencyKind::Normal, &Target::Default, &dep);
-    ///     assert!(manifest.remove_from_table("dependencies", &dep.name).is_ok());
-    ///     assert!(manifest.remove_from_table("dependencies", &dep.name).is_err());
+    ///     assert!(manifest.remove_from_table(&DependencyKind::Normal, &dep.name).is_ok());
+    ///     assert!(manifest.remove_from_table(&DependencyKind::Normal, &dep.name).is_err());
     ///     assert!(manifest.data.is_empty());
     /// # }
     /// ```
-    pub fn remove_from_table(&mut self, table: &str, name: &str) -> Result<()> {
+    pub fn remove_from_table(&mut self, dependency_kind: &DependencyKind, name: &str) -> Result<()> {
         let manifest = &mut self.data;
-        let entry = manifest.entry(String::from(table));
+        let entry = manifest.entry(dependency_kind.to_string());
 
         match entry {
-            Entry::Vacant(_) => Err(ErrorKind::NonExistentTable(table.into())),
+            Entry::Vacant(_) => Err(ErrorKind::NonExistentTable(dependency_kind.to_string())),
             Entry::Occupied(mut section) => {
                 let result = match *section.get_mut() {
                     toml::Value::Table(ref mut deps) => {
                         deps.remove(name).map(|_| ()).ok_or_else(|| {
-                            ErrorKind::NonExistentDependency(name.into(), table.into())
+                            ErrorKind::NonExistentDependency(
+                                name.into(),
+                                dependency_kind.to_string(),
+                            )
                         })
                     }
-                    _ => Err(ErrorKind::NonExistentTable(table.into())),
+                    _ => Err(ErrorKind::NonExistentTable(dependency_kind.to_string())),
                 };
                 if section.get().as_table().map(|x| x.is_empty()) == Some(true) {
                     section.remove();
@@ -476,7 +479,7 @@ mod tests {
         let _ = manifest.insert_into_table(&DependencyKind::Normal, &Target::Default, &dep);
         assert!(
             manifest
-                .remove_from_table("dependencies", &dep.name)
+                .remove_from_table(&DependencyKind::Normal, &dep.name)
                 .is_ok()
         );
         assert_eq!(manifest, clone);
@@ -525,7 +528,7 @@ mod tests {
         let dep = Dependency::new("cargo-edit").set_version("0.1.0");
         assert!(
             manifest
-                .remove_from_table("dependencies", &dep.name)
+                .remove_from_table(&DependencyKind::Normal, &dep.name)
                 .is_err()
         );
     }
@@ -540,7 +543,7 @@ mod tests {
         let _ = manifest.insert_into_table(&DependencyKind::Normal, &Target::Default, &other_dep);
         assert!(
             manifest
-                .remove_from_table("dependencies", &dep.name)
+                .remove_from_table(&DependencyKind::Normal, &dep.name)
                 .is_err()
         );
     }

@@ -48,7 +48,7 @@ fn handle_rm(args: &Args) -> Result<()> {
     let mut manifest = Manifest::open(&manifest_path)?;
 
     manifest
-        .remove_from_table(args.get_section(), args.arg_crate.as_ref())
+        .remove_from_table(&args.get_dependency_type(), args.arg_crate.as_ref())
         .map_err(From::from)
         .and_then(|_| {
             let mut file = Manifest::find_file(&manifest_path)?;

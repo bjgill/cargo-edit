@@ -50,14 +50,13 @@ impl Args {
     }
 
     /// Get dependency type
-    pub fn get_dependency_type(&self) -> Result<DependencyKind> {
-        Ok(match (self.flag_dev, self.flag_build) {
+    pub fn get_dependency_type(&self) -> DependencyKind {
+        match (self.flag_dev, self.flag_build) {
             (true, false) => DependencyKind::Development,
             (false, true) => DependencyKind::Build,
             (false, false) => DependencyKind::Normal,
             (true, true) => unreachable!(),
-
-        })
+        }
     }
 
     /// Build dependencies from arguments

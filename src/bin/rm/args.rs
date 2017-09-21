@@ -1,4 +1,5 @@
 //! Handle `cargo rm` arguments
+use cargo_edit::DependencyKind;
 
 #[derive(Debug, Deserialize)]
 /// Docopts input args.
@@ -16,14 +17,13 @@ pub struct Args {
 }
 
 impl Args {
-    /// Get depenency section
-    pub fn get_section(&self) -> &'static str {
-        if self.flag_dev {
-            "dev-dependencies"
-        } else if self.flag_build {
-            "build-dependencies"
-        } else {
-            "dependencies"
+    /// Get dependency type
+    pub fn get_dependency_type(&self) -> DependencyKind {
+        match (self.flag_dev, self.flag_build) {
+            (true, false) => DependencyKind::Development,
+            (false, true) => DependencyKind::Build,
+            (false, false) => DependencyKind::Normal,
+            (true, true) => unreachable!(),
         }
     }
 }

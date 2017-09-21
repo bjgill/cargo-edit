@@ -78,7 +78,7 @@ fn handle_add(args: &Args) -> Result<()> {
     deps.iter()
         .map(|dep| {
             manifest
-                .insert_into_table(&args.get_dependency_type()?, &args.get_target()?, dep)
+                .insert_into_table(&args.get_dependency_type(), &args.get_target()?, dep)
                 .map_err(Into::into)
         })
         .collect::<Result<Vec<_>>>()
