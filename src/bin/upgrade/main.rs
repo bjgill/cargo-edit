@@ -93,14 +93,15 @@ where
     let manifest_path = manifest_path.as_ref().map(From::from);
     let mut manifest = Manifest::open(&manifest_path)?;
 
-    for (table_path, table) in manifest.get_sections() {
+    for (dependency_type, target, table) in manifest.get_sections() {
         for (name, old_value) in &table {
             if (only_update.is_empty() || only_update.contains(name)) &&
                 is_version_dependency(old_value)
             {
                 let latest_version = new_dependency(name)?;
 
-                manifest.update_table_entry(&table_path, &latest_version)?;
+                manifest
+                    .update_table_entry(&dependency_type, &target, &latest_version)?;
             }
         }
     }

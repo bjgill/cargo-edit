@@ -5,6 +5,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::{env, str};
 
+pub use cargo_metadata::DependencyKind;
 use serde::Serialize;
 use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
 use toml;
@@ -31,6 +32,39 @@ impl CargoFile {
 pub struct Manifest {
     /// Manifest contents as TOML data
     pub data: toml::value::Table,
+}
+
+/// Extension trait to allow us to call `to_string()` on a `DependencyKind`.
+pub trait ToStringExt {
+    fn to_string(self) -> String;
+}
+
+impl ToStringExt for DependencyKind {
+    fn to_string(self) -> String {
+        match self {
+            DependencyKind::Normal => "dependencies",
+            DependencyKind::Development => "dev-dependencies",
+            DependencyKind::Build => "build-dependencies",
+        }.to_string()
+    }
+}
+
+/// Dependencies can be associated with a specific target (or target configuration)
+#[derive(Clone, Debug)]
+pub enum Target {
+    /// The dependency is always present
+    Default,
+    /// The dependency is only present for the specified target
+    Specified(String),
+}
+
+impl From<Option<String>> for Target {
+    fn from(t: Option<String>) -> Target {
+        match t {
+            None => Target::Default,
+            Some(t) => Target::Specified(t),
+        }
+    }
 }
 
 fn toml_pretty(value: &toml::Value) -> Result<String> {
@@ -208,8 +242,17 @@ impl Manifest {
     /// Get the specified table from the manifest.
     pub fn get_table<'a>(
         &'a mut self,
-        table_path: &[String],
+        dependency_type: &DependencyKind,
+        target: &Target,
     ) -> Result<&'a mut BTreeMap<String, toml::Value>> {
+
+        let table_path = match *target {
+            Target::Default => vec![dependency_type.to_string()],
+            Target::Specified(ref t) => {
+                vec!["target".to_string(), t.clone(), dependency_type.to_string()]
+            }
+        };
+
         /// Descend into a manifest until the required table is found.
         fn descend<'a>(
             input: &'a mut BTreeMap<String, toml::Value>,
@@ -229,20 +272,25 @@ impl Manifest {
             }
         }
 
-        descend(&mut self.data, table_path)
+        descend(&mut self.data, &table_path)
     }
 
     /// Get all sections in the manifest that exist and might contain dependencies.
-    pub fn get_sections(&self) -> Vec<(Vec<String>, BTreeMap<String, toml::Value>)> {
+    pub fn get_sections(&self) -> Vec<(DependencyKind, Target, BTreeMap<String, toml::Value>)> {
         let mut sections = Vec::new();
 
-        for dependency_type in &["dev-dependencies", "build-dependencies", "dependencies"] {
+        for dependency_type in vec![
+            DependencyKind::Normal,
+            DependencyKind::Development,
+            DependencyKind::Build,
+        ].into_iter()
+        {
             // Dependencies can be in the three standard sections...
             self.data
                 .get(&dependency_type.to_string())
                 .and_then(toml::Value::as_table)
                 .map(|table| {
-                    sections.push((vec![dependency_type.to_string()], table.clone()))
+                    sections.push((dependency_type.clone(), Target::Default, table.clone()))
                 });
 
             // ... and in `target.<target>.(build-/dev-)dependencies`.
@@ -253,15 +301,12 @@ impl Manifest {
                 .flat_map(|target_tables| target_tables.into_iter())
                 .filter_map(|(target_name, target_table)| {
                     target_table
-                        .get(dependency_type)
+                        .get(&dependency_type.to_string())
                         .and_then(toml::Value::as_table)
                         .map(|dependency_table| {
                             (
-                                vec![
-                                    "target".to_string(),
-                                    target_name.to_string(),
-                                    dependency_type.to_string(),
-                                ],
+                                dependency_type.clone(),
+                                Target::Specified(target_name.to_string()),
                                 dependency_table.to_owned(),
                             )
                         })
@@ -299,8 +344,13 @@ impl Manifest {
     }
 
     /// Add entry to a Cargo.toml.
-    pub fn insert_into_table(&mut self, table_path: &[String], dep: &Dependency) -> Result<()> {
-        let table = self.get_table(table_path)?;
+    pub fn insert_into_table(
+        &mut self,
+        dependency_type: &DependencyKind,
+        target: &Target,
+        dep: &Dependency,
+    ) -> Result<()> {
+        let table = self.get_table(dependency_type, target)?;
 
         table
             .get_mut(&dep.name)
@@ -317,8 +367,13 @@ impl Manifest {
     }
 
     /// Update an entry in Cargo.toml.
-    pub fn update_table_entry(&mut self, table_path: &[String], dep: &Dependency) -> Result<()> {
-        let table = self.get_table(table_path)?;
+    pub fn update_table_entry(
+        &mut self,
+        dependency_type: &DependencyKind,
+        target: &Target,
+        dep: &Dependency,
+    ) -> Result<()> {
+        let table = self.get_table(dependency_type, target)?;
         let new_dep = dep.to_toml().1;
 
         // If (and only if) there is an old entry, merge the new one in.
@@ -341,12 +396,12 @@ impl Manifest {
     /// # extern crate cargo_edit;
     /// # extern crate toml;
     /// # fn main() {
-    ///     use cargo_edit::{Dependency, Manifest};
+    ///     use cargo_edit::{Dependency, DependencyKind, Manifest, Target};
     ///     use toml;
     ///
     ///     let mut manifest = Manifest { data: toml::value::Table::new() };
     ///     let dep = Dependency::new("cargo-edit").set_version("0.1.0");
-    ///     let _ = manifest.insert_into_table(&vec!["dependencies".to_owned()], &dep);
+    ///     let _ = manifest.insert_into_table(&DependencyKind::Normal, &Target::Default, &dep);
     ///     assert!(manifest.remove_from_table("dependencies", &dep.name).is_ok());
     ///     assert!(manifest.remove_from_table("dependencies", &dep.name).is_err());
     ///     assert!(manifest.data.is_empty());
@@ -378,9 +433,14 @@ impl Manifest {
     }
 
     /// Add multiple dependencies to manifest
-    pub fn add_deps(&mut self, table: &[String], deps: &[Dependency]) -> Result<()> {
+    pub fn add_deps(
+        &mut self,
+        dependency_type: &DependencyKind,
+        target: &Target,
+        deps: &[Dependency],
+    ) -> Result<()> {
         deps.iter()
-            .map(|dep| self.insert_into_table(table, dep))
+            .map(|dep| self.insert_into_table(dependency_type, target, dep))
             .collect::<Result<Vec<_>>>()?;
 
         Ok(())
@@ -413,7 +473,7 @@ mod tests {
         };
         let clone = manifest.clone();
         let dep = Dependency::new("cargo-edit").set_version("0.1.0");
-        let _ = manifest.insert_into_table(&["dependencies".to_owned()], &dep);
+        let _ = manifest.insert_into_table(&DependencyKind::Normal, &Target::Default, &dep);
         assert!(
             manifest
                 .remove_from_table("dependencies", &dep.name)
@@ -429,12 +489,12 @@ mod tests {
         };
         let dep = Dependency::new("cargo-edit").set_version("0.1.0");
         manifest
-            .insert_into_table(&["dependencies".to_owned()], &dep)
+            .insert_into_table(&DependencyKind::Normal, &Target::Default, &dep)
             .unwrap();
 
         let new_dep = Dependency::new("cargo-edit").set_version("0.2.0");
         manifest
-            .update_table_entry(&["dependencies".to_owned()], &new_dep)
+            .update_table_entry(&DependencyKind::Normal, &Target::Default, &new_dep)
             .unwrap();
     }
 
@@ -445,13 +505,13 @@ mod tests {
         };
         let dep = Dependency::new("cargo-edit").set_version("0.1.0");
         manifest
-            .insert_into_table(&["dependencies".to_owned()], &dep)
+            .insert_into_table(&DependencyKind::Normal, &Target::Default, &dep)
             .unwrap();
         let original = manifest.clone();
 
         let new_dep = Dependency::new("wrong-dep").set_version("0.2.0");
         manifest
-            .update_table_entry(&["dependencies".to_owned()], &new_dep)
+            .update_table_entry(&DependencyKind::Normal, &Target::Default, &new_dep)
             .unwrap();
 
         assert_eq!(manifest, original);
@@ -477,7 +537,7 @@ mod tests {
         };
         let dep = Dependency::new("cargo-edit").set_version("0.1.0");
         let other_dep = Dependency::new("other-dep").set_version("0.1.0");
-        let _ = manifest.insert_into_table(&["dependencies".to_owned()], &other_dep);
+        let _ = manifest.insert_into_table(&DependencyKind::Normal, &Target::Default, &other_dep);
         assert!(
             manifest
                 .remove_from_table("dependencies", &dep.name)

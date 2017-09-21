@@ -1,6 +1,6 @@
 //! Handle `cargo add` arguments
 
-use cargo_edit::Dependency;
+use cargo_edit::{Dependency, DependencyKind, Target};
 use cargo_edit::{get_crate_name_from_github, get_crate_name_from_gitlab, get_crate_name_from_path,
                  get_latest_dependency};
 use semver;
@@ -40,24 +40,24 @@ pub struct Args {
 }
 
 impl Args {
-    /// Get dependency section
-    pub fn get_section(&self) -> Vec<String> {
-        if self.flag_dev {
-            vec!["dev-dependencies".to_owned()]
-        } else if self.flag_build {
-            vec!["build-dependencies".to_owned()]
-        } else if let Some(ref target) = self.flag_target {
-            if target.is_empty() {
-                panic!("Target specification may not be empty");
-            }
-            vec![
-                "target".to_owned(),
-                target.clone(),
-                "dependencies".to_owned(),
-            ]
-        } else {
-            vec!["dependencies".to_owned()]
+    /// Get dependency target
+    pub fn get_target(&self) -> Result<Target> {
+        if self.flag_target == Some(String::new()) {
+            bail!("Target specification may not be empty");
         }
+
+        Ok(Target::from(self.flag_target.clone()))
+    }
+
+    /// Get dependency type
+    pub fn get_dependency_type(&self) -> Result<DependencyKind> {
+        Ok(match (self.flag_dev, self.flag_build) {
+            (true, false) => DependencyKind::Development,
+            (false, true) => DependencyKind::Build,
+            (false, false) => DependencyKind::Normal,
+            (true, true) => unreachable!(),
+
+        })
     }
 
     /// Build dependencies from arguments
