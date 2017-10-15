@@ -22,7 +22,7 @@ pub fn clone_out_test(source: &str) -> (tempdir::TempDir, String) {
     (tmpdir, path)
 }
 
-/// Execute localc cargo command, includes `--manifest-path`
+/// Execute local cargo command, includes `--manifest-path`, and mocks out connection to crates.io.
 pub fn execute_command<S>(command: &[S], manifest: &str)
 where
     S: AsRef<OsStr>,
@@ -41,6 +41,27 @@ where
         println!("STDOUT: {}", String::from_utf8_lossy(&call.stdout));
         println!("STDERR: {}", String::from_utf8_lossy(&call.stderr));
         panic!("cargo-add failed to execute")
+    }
+}
+
+/// Execute a cargo command expected to fail, automatically setting the manifest path.
+pub fn execute_real_failing_command<S>(command: &[S], manifest: &str)
+where
+    S: AsRef<OsStr>,
+{
+    let subcommand_name = &command[0].as_ref().to_str().unwrap();
+
+    let call = process::Command::new(&format!("target/debug/cargo-{}", subcommand_name))
+        .args(command)
+        .arg(format!("--manifest-path={}", manifest))
+        .output()
+        .unwrap();
+
+    if call.status.success() {
+        println!("Status code: {:?}", call.status);
+        println!("STDOUT: {}", String::from_utf8_lossy(&call.stdout));
+        println!("STDERR: {}", String::from_utf8_lossy(&call.stderr));
+        panic!("cargo-add unexpectedly executed successfully")
     }
 }
 

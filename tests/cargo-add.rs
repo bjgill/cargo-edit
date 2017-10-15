@@ -3,9 +3,8 @@ extern crate assert_cli;
 extern crate pretty_assertions;
 extern crate toml;
 
-use std::process;
 mod utils;
-use utils::{clone_out_test, execute_command, get_toml};
+use utils::{clone_out_test, execute_command, execute_real_failing_command, get_toml};
 
 /// Some of the tests need to have a crate name that does not exist on crates.io. Hence this rather
 /// silly constant. Tests _will_ fail, though, if a crate is ever published with this name.
@@ -140,13 +139,8 @@ fn adds_dev_build_dependency() {
     );
 
     // cannot run with both --dev and --build at the same time
-    let call = process::Command::new("target/debug/cargo-add")
-        .args(&["add", BOGUS_CRATE_NAME, "--dev", "--build"])
-        .arg(format!("--manifest-path={}", &manifest))
-        .output()
-        .unwrap();
+    execute_real_failing_command(&["add", BOGUS_CRATE_NAME, "--dev", "--build"], &manifest);
 
-    assert!(!call.status.success());
     assert!(no_manifest_failures(&get_toml(&manifest)));
 }
 
@@ -213,18 +207,11 @@ fn adds_specified_version() {
     assert_eq!(val.as_str().expect("not string"), ">=0.1.1");
 
     // cannot run with both --dev and --build at the same time
-    let call = process::Command::new("target/debug/cargo-add")
-        .args(&[
-            "add",
-            BOGUS_CRATE_NAME,
-            "--vers",
-            "invalid version string",
-        ])
-        .arg(format!("--manifest-path={}", &manifest))
-        .output()
-        .unwrap();
+    execute_real_failing_command(
+        &["add", BOGUS_CRATE_NAME, "--vers", "invalid version string"],
+        &manifest,
+    );
 
-    assert!(!call.status.success());
     assert!(no_manifest_failures(&get_toml(&manifest)));
 }
 
@@ -441,16 +428,20 @@ fn adds_local_source_without_flag() {
 fn package_kinds_are_mutually_exclusive() {
     let (_tmpdir, manifest) = clone_out_test("tests/fixtures/add/Cargo.toml.sample");
 
-    let call = process::Command::new("target/debug/cargo-add")
-        .args(&["add", BOGUS_CRATE_NAME])
-        .args(&["--vers", "0.4.3"])
-        .args(&["--git", "git://git.git"])
-        .args(&["--path", "/path/here"])
-        .arg(format!("--manifest-path={}", &manifest))
-        .output()
-        .unwrap();
+    execute_real_failing_command(
+        &[
+            "add",
+            "serde",
+            "--vers",
+            "0.4.3",
+            "--git",
+            "git://git.git",
+            "--path",
+            "/path/here",
+        ],
+        &manifest,
+    );
 
-    assert!(!call.status.success());
     assert!(no_manifest_failures(&get_toml(&manifest)));
 }
 
