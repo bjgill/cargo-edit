@@ -15,11 +15,13 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate termcolor;
 extern crate toml;
+extern crate tomllib;
 
 mod dependency;
 mod errors;
 mod fetch;
 mod manifest;
+pub mod manifest_new;
 
 pub use dependency::Dependency;
 pub use errors::*;
