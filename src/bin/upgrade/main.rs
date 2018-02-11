@@ -12,9 +12,10 @@ extern crate serde_derive;
 extern crate toml_edit;
 
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
 use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process;
+use std::thread;
 
 extern crate cargo_edit;
 use cargo_edit::{find, get_latest_dependency, Dependency, LocalManifest};
@@ -177,10 +178,22 @@ impl Manifests {
                 .chain_err(|| "Failed to print dry run message")?;
         }
 
+        let mut children: Vec<thread::JoinHandle<Result<()>>> = vec![];
+
         for (mut manifest, _) in self.0 {
-            for dependency in &upgraded_deps.0 {
-                manifest.upgrade(dependency, dry_run)?;
-            }
+            let upgraded_deps = upgraded_deps.clone();
+            children.push(thread::spawn(move || {
+                for dependency in &upgraded_deps.0 {
+                    manifest.upgrade(dependency, dry_run)?;
+                }
+
+                Ok(())
+            }));
+        }
+
+        for child in children {
+            // The `unwrap` ensures that a panic inside one of the threads will be propagated up.
+            child.join().unwrap()?;
         }
 
         Ok(())
@@ -188,6 +201,7 @@ impl Manifests {
 }
 
 /// This represents the version dependencies of the manifests that `cargo-upgrade` will upgrade.
+#[derive(Clone)]
 struct Dependencies(HashSet<Dependency>);
 
 impl Dependencies {
